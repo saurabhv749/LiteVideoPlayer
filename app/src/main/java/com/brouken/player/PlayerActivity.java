@@ -49,10 +49,12 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.accessibility.CaptioningManager;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -656,19 +658,19 @@ public class PlayerActivity extends Activity {
 
         buttonAspectRatioMenu.setOnClickListener(v -> {
             popupMenu.show();
-        })
+        });
 
         final Button buttonZoomIn = new Button(this, null, R.attr.imageButtonStyle);
         buttonZoomIn.setText("+");
         buttonZoomIn.setOnClickListener(v -> {
             scale(true);
-        })
+        });
 
         final Button buttonZoomOut = new Button(this, null, R.attr.imageButtonStyle);
         buttonZoomIn.setText("-");
         buttonZoomIn.setOnClickListener(v -> {
             scale(false);
-        })
+        });
 
         updateButtons(false);
 
@@ -678,9 +680,9 @@ public class PlayerActivity extends Activity {
         controls.addView(buttonOpen);
         controls.addView(exoSubtitle);
         controls.addView(buttonAspectRatio);
-        controls.addView(buttonAspectRatioMenu)
-        controls.addView(buttonZoomIn)
-        controls.addView(buttonZoomOut)
+        controls.addView(buttonAspectRatioMenu);
+        controls.addView(buttonZoomIn);
+        controls.addView(buttonZoomOut);
         if (Utils.isPiPSupported(this) && buttonPiP != null) {
             controls.addView(buttonPiP);
         }
