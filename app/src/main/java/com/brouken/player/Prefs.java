@@ -74,7 +74,7 @@ class Prefs {
     public boolean tunneling = false;
     public boolean skipSilence = false;
     public boolean frameRateMatching = false;
-    public boolean repeatToggle = false;
+    public boolean repeatToggle = true;
     public String fileAccess = "auto";
     public int decoderPriority = DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
     public boolean mapDV7ToHevc = false;

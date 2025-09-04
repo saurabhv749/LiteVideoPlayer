@@ -326,8 +326,8 @@ public class PlayerActivity extends Activity {
 
         playerView.setShowNextButton(false);
         playerView.setShowPreviousButton(false);
-        playerView.setShowFastForwardButton(false);
-        playerView.setShowRewindButton(false);
+        // playerView.setShowFastForwardButton(false);
+        // playerView.setShowRewindButton(false);
 
         playerView.setRepeatToggleModes(Player.REPEAT_MODE_ONE);
 
@@ -456,24 +456,24 @@ public class PlayerActivity extends Activity {
         titleView.setTextDirection(View.TEXT_DIRECTION_LOCALE);
         centerView.addView(titleView);
 
-        titleView.setOnLongClickListener(view -> {
-            // Prevent FileUriExposedException
-            if (mPrefs.mediaUri != null && ContentResolver.SCHEME_FILE.equals(mPrefs.mediaUri.getScheme())) {
-                return false;
-            }
+        // titleView.setOnLongClickListener(view -> {
+        //     // Prevent FileUriExposedException
+        //     if (mPrefs.mediaUri != null && ContentResolver.SCHEME_FILE.equals(mPrefs.mediaUri.getScheme())) {
+        //         return false;
+        //     }
 
-            final Intent shareIntent = new Intent(Intent.ACTION_SEND);
-            shareIntent.putExtra(Intent.EXTRA_STREAM, mPrefs.mediaUri);
-            if (mPrefs.mediaType == null)
-                shareIntent.setType("video/*");
-            else
-                shareIntent.setType(mPrefs.mediaType);
-            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            // Start without intent chooser to allow any target to be set as default
-            startActivity(shareIntent);
+        //     final Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        //     shareIntent.putExtra(Intent.EXTRA_STREAM, mPrefs.mediaUri);
+        //     if (mPrefs.mediaType == null)
+        //         shareIntent.setType("video/*");
+        //     else
+        //         shareIntent.setType(mPrefs.mediaType);
+        //     shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        //     // Start without intent chooser to allow any target to be set as default
+        //     startActivity(shareIntent);
 
-            return true;
-        });
+        //     return true;
+        // });
 
         if (Build.VERSION.SDK_INT >= 35) {
             getWindow().setNavigationBarContrastEnforced(false);
@@ -595,7 +595,7 @@ public class PlayerActivity extends Activity {
         exoSettings = exoBasicControls.findViewById(R.id.exo_settings);
         exoBasicControls.removeView(exoSettings);
         final ImageButton exoRepeat = exoBasicControls.findViewById(R.id.exo_repeat_toggle);
-        exoBasicControls.removeView(exoRepeat);
+        // exoBasicControls.removeView(exoRepeat);
         //exoBasicControls.setVisibility(View.GONE);
 
         exoSettings.setOnLongClickListener(view -> {
@@ -610,6 +610,65 @@ public class PlayerActivity extends Activity {
             safelyStartActivityForResult(new Intent(Settings.ACTION_CAPTIONING_SETTINGS), REQUEST_SYSTEM_CAPTIONS);
             return true;
         });
+        // Aspect ratio menu
+        final Button buttonAspectRatioMenu = new Button(this, null, R.attr.imageButtonStyle);
+        buttonAspectRatioMenu.setText("AR");
+        final PopupMenu popupMenu = new PopupMenu(PlayerActivity.this, buttonAspectRatioMenu);
+        popupMenu.getMenu().add(R.string.video_resize_fit);
+        popupMenu.getMenu().add("1:1");
+        popupMenu.getMenu().add("3:2");
+        popupMenu.getMenu().add("4:3");
+        popupMenu.getMenu().add("5:4");
+        popupMenu.getMenu().add("11:8");
+        popupMenu.getMenu().add("14:9");
+        popupMenu.getMenu().add("14:10");
+        popupMenu.getMenu().add("16:9");
+        popupMenu.getMenu().add("16:10");
+        popupMenu.getMenu().add("21:9");
+
+        popupMenu.setOnMenuItemClickListener(item -> {
+            AspectRatioFrameLayout contentFrame = playerView.findViewById(R.id.exo_content_frame);
+            if (contentFrame != null) {
+                playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
+                String title = item.getTitle().toString();
+
+                if (title.equals(getString(R.string.video_resize_fit))) {
+                    if (player != null) {
+                        Format format = player.getVideoFormat();
+                        if (format != null) {
+                            contentFrame.setAspectRatio(Utils.getRational(format).floatValue());
+                        }
+                    }
+                } else {
+                    String[] ratio = title.split(":");
+                    if (ratio.length == 2) {
+                        try {
+                            float width = Float.parseFloat(ratio[0]);
+                            float height = Float.parseFloat(ratio[1]);
+                            if (height > 0)
+                                contentFrame.setAspectRatio(width / height);
+                        } catch (NumberFormatException e) { }
+                    }
+                }
+            }
+            return true;
+            });
+
+        buttonAspectRatioMenu.setOnClickListener(v -> {
+            popupMenu.show();
+        })
+
+        final Button buttonZoomIn = new Button(this, null, R.attr.imageButtonStyle);
+        buttonZoomIn.setText("+");
+        buttonZoomIn.setOnClickListener(v -> {
+            scale(true);
+        })
+
+        final Button buttonZoomOut = new Button(this, null, R.attr.imageButtonStyle);
+        buttonZoomIn.setText("-");
+        buttonZoomIn.setOnClickListener(v -> {
+            scale(false);
+        })
 
         updateButtons(false);
 
@@ -619,6 +678,9 @@ public class PlayerActivity extends Activity {
         controls.addView(buttonOpen);
         controls.addView(exoSubtitle);
         controls.addView(buttonAspectRatio);
+        controls.addView(buttonAspectRatioMenu)
+        controls.addView(buttonZoomIn)
+        controls.addView(buttonZoomOut)
         if (Utils.isPiPSupported(this) && buttonPiP != null) {
             controls.addView(buttonPiP);
         }
@@ -711,7 +773,7 @@ public class PlayerActivity extends Activity {
         });
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (useMediaStore()) {
+            if (useMediaStore() ) {
                 Utils.scanMediaStorage(this);
             }
         }
@@ -1359,7 +1421,7 @@ public class PlayerActivity extends Activity {
             }
 
             player.setHandleAudioBecomingNoisy(!isTvBox);
-//            mediaSession.setActive(true);
+            // mediaSession.setActive(true);
         } else {
             playerView.showController();
         }
@@ -1406,7 +1468,7 @@ public class PlayerActivity extends Activity {
         if (player != null) {
             notifyAudioSessionUpdate(false);
 
-//            mediaSession.setActive(false);
+            // mediaSession.setActive(false);
             if (mediaSession != null) {
                 mediaSession.release();
             }
@@ -2260,9 +2322,9 @@ public class PlayerActivity extends Activity {
 
     private void scale(boolean up) {
         if (up) {
-            scaleFactor += 0.01;
+            scaleFactor += 0.05;
         } else {
-            scaleFactor -= 0.01;
+            scaleFactor -= 0.05;
         }
         scaleFactor = Utils.normalizeScaleFactor(scaleFactor, playerView.getScaleFit());
         playerView.setScale(scaleFactor);
