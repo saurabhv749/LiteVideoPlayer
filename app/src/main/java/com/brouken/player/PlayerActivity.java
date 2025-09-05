@@ -18,6 +18,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.UriPermission;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
@@ -107,6 +108,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -216,12 +218,25 @@ public class PlayerActivity extends Activity {
         }
     };
 
+    // per file state
+    private static final String PREF_NAME = "VideoConfigs";
+    private SharedPreferences videoPrefs;
+    private Map<String, VideoConfig> videoConfigs = new HashMap<>();
+
+    private static class VideoConfig{
+        public int resizeMode;
+        public float scale;
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Rotate ASAP, before super/inflating to avoid glitches with activity launch animation
         mPrefs = new Prefs(this);
         Utils.setOrientation(this, mPrefs.orientation);
+
+        videoPrefs = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
+        loadVideoConfigs();
 
         super.onCreate(savedInstanceState);
         if (Build.VERSION.SDK_INT == 28 && Build.MANUFACTURER.equalsIgnoreCase("xiaomi") &&
@@ -326,12 +341,14 @@ public class PlayerActivity extends Activity {
         exoPlayPause = findViewById(R.id.exo_play_pause);
         loadingProgressBar = findViewById(R.id.loading);
 
-        playerView.setShowNextButton(false);
-        playerView.setShowPreviousButton(false);
-        // playerView.setShowFastForwardButton(false);
-        // playerView.setShowRewindButton(false);
+        playerView.setShowNextButton(true);
+        playerView.setShowPreviousButton(true);
+        playerView.setShowShuffleButton(true);
+        playerView.setShowFastForwardButton(false);
+        playerView.setShowRewindButton(false);
 
         playerView.setRepeatToggleModes(Player.REPEAT_MODE_ONE);
+        // playerView.setShuffleModeEnabled(true)
 
         playerView.setControllerHideOnTouch(false);
         playerView.setControllerAutoShow(true);
@@ -399,39 +416,39 @@ public class PlayerActivity extends Activity {
             mPictureInPictureParamsBuilder = new PictureInPictureParams.Builder();
             boolean success = updatePictureInPictureActions(R.drawable.ic_play_arrow_24dp, R.string.exo_controls_play_description, CONTROL_TYPE_PLAY, REQUEST_PLAY);
 
-            if (success) {
-                buttonPiP = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
-                buttonPiP.setContentDescription(getString(R.string.button_pip));
-                buttonPiP.setImageResource(R.drawable.ic_picture_in_picture_alt_24dp);
+            // if (success) {
+            //     buttonPiP = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
+            //     buttonPiP.setContentDescription(getString(R.string.button_pip));
+            //     buttonPiP.setImageResource(R.drawable.ic_picture_in_picture_alt_24dp);
 
-                buttonPiP.setOnClickListener(view -> enterPiP());
-            }
+            //     buttonPiP.setOnClickListener(view -> enterPiP());
+            // }
         }
 
-        buttonAspectRatio = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
-        buttonAspectRatio.setId(Integer.MAX_VALUE - 100);
-        buttonAspectRatio.setContentDescription(getString(R.string.button_crop));
-        updatebuttonAspectRatioIcon();
-        buttonAspectRatio.setOnClickListener(view -> {
-            playerView.setScale(1.f);
-            if (playerView.getResizeMode() == AspectRatioFrameLayout.RESIZE_MODE_FIT) {
-                playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ZOOM);
-                Utils.showText(playerView, getString(R.string.video_resize_crop));
-            } else {
-                // Default mode
-                playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
-                Utils.showText(playerView, getString(R.string.video_resize_fit));
-            }
-            updatebuttonAspectRatioIcon();
-            resetHideCallbacks();
-        });
-        if (isTvBox && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            buttonAspectRatio.setOnLongClickListener(v -> {
-                scaleStart();
-                updatebuttonAspectRatioIcon();
-                return true;
-            });
-        }
+        // buttonAspectRatio = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
+        // buttonAspectRatio.setId(Integer.MAX_VALUE - 100);
+        // buttonAspectRatio.setContentDescription(getString(R.string.button_crop));
+        // updatebuttonAspectRatioIcon();
+        // buttonAspectRatio.setOnClickListener(view -> {
+        //     playerView.setScale(1.f);
+        //     if (playerView.getResizeMode() == AspectRatioFrameLayout.RESIZE_MODE_FIT) {
+        //         playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ZOOM);
+        //         Utils.showText(playerView, getString(R.string.video_resize_crop));
+        //     } else {
+        //         // Default mode
+        //         playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
+        //         Utils.showText(playerView, getString(R.string.video_resize_fit));
+        //     }
+        //     updatebuttonAspectRatioIcon();
+        //     resetHideCallbacks();
+        // });
+        // if (isTvBox && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        //     buttonAspectRatio.setOnLongClickListener(v -> {
+        //         scaleStart();
+        //         updatebuttonAspectRatioIcon();
+        //         return true;
+        //     });
+        // }
         buttonRotation = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
         buttonRotation.setContentDescription(getString(R.string.button_rotate));
         updateButtonRotation();
@@ -593,11 +610,13 @@ public class PlayerActivity extends Activity {
         final LinearLayout exoBasicControls = playerView.findViewById(R.id.exo_basic_controls);
         final ImageButton exoSubtitle = exoBasicControls.findViewById(R.id.exo_subtitle);
         exoBasicControls.removeView(exoSubtitle);
+        final ImageButton exoShuffle = exoBasicControls.findViewById(R.id.exo_shuffle);
+        exoBasicControls.removeView(exoShuffle);
 
         exoSettings = exoBasicControls.findViewById(R.id.exo_settings);
         exoBasicControls.removeView(exoSettings);
         final ImageButton exoRepeat = exoBasicControls.findViewById(R.id.exo_repeat_toggle);
-        // exoBasicControls.removeView(exoRepeat);
+         exoBasicControls.removeView(exoRepeat);
         //exoBasicControls.setVisibility(View.GONE);
 
         exoSettings.setOnLongClickListener(view -> {
@@ -613,9 +632,14 @@ public class PlayerActivity extends Activity {
             return true;
         });
         // Aspect ratio menu
-        final Button buttonAspectRatioMenu = new Button(this, null, R.attr.imageButtonStyle);
-        buttonAspectRatioMenu.setText("AR");
-        final PopupMenu popupMenu = new PopupMenu(PlayerActivity.this, buttonAspectRatioMenu);
+        buttonAspectRatio = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
+        buttonAspectRatio.setId(Integer.MAX_VALUE - 100);
+        buttonAspectRatio.setContentDescription(getString(R.string.button_crop));
+        updatebuttonAspectRatioIcon();
+        // final Button buttonAspectRatioMenu = new Button(this, null, R.attr.imageButtonStyle);
+        // buttonAspectRatioMenu.setText("AR");
+
+        final PopupMenu popupMenu = new PopupMenu(PlayerActivity.this, buttonAspectRatio);
         popupMenu.getMenu().add(R.string.video_resize_fit);
         popupMenu.getMenu().add("1:1");
         popupMenu.getMenu().add("3:2");
@@ -638,6 +662,8 @@ public class PlayerActivity extends Activity {
                     if (player != null) {
                         Format format = player.getVideoFormat();
                         if (format != null) {
+                            // Default mode
+                            playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
                             contentFrame.setAspectRatio(Utils.getRational(format).floatValue());
                         }
                     }
@@ -647,8 +673,10 @@ public class PlayerActivity extends Activity {
                         try {
                             float width = Float.parseFloat(ratio[0]);
                             float height = Float.parseFloat(ratio[1]);
-                            if (height > 0)
+                            if (height > 0) {
+                                playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ZOOM);
                                 contentFrame.setAspectRatio(width / height);
+                            }
                         } catch (NumberFormatException e) { }
                     }
                 }
@@ -656,19 +684,22 @@ public class PlayerActivity extends Activity {
             return true;
             });
 
-        buttonAspectRatioMenu.setOnClickListener(v -> {
+        buttonAspectRatio.setOnClickListener(v -> {
             popupMenu.show();
         });
 
-        final Button buttonZoomIn = new Button(this, null, R.attr.imageButtonStyle);
-        buttonZoomIn.setText("+");
+        final ImageButton buttonZoomIn = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
+        buttonZoomIn.setContentDescription(getString(R.string.video_zoom_in));
+        buttonZoomIn.setImageResource(R.drawable.baseline_zoom_in_24);
+
         buttonZoomIn.setOnClickListener(v -> {
             scale(true);
         });
 
-        final Button buttonZoomOut = new Button(this, null, R.attr.imageButtonStyle);
-        buttonZoomIn.setText("-");
-        buttonZoomIn.setOnClickListener(v -> {
+        final ImageButton buttonZoomOut = new ImageButton(this, null, 0, R.style.ExoStyledControls_Button_Bottom);
+        buttonZoomOut.setContentDescription(getString(R.string.video_zoom_out));
+        buttonZoomOut.setImageResource(R.drawable.baseline_zoom_out_24);
+        buttonZoomOut.setOnClickListener(v -> {
             scale(false);
         });
 
@@ -679,16 +710,17 @@ public class PlayerActivity extends Activity {
 
         controls.addView(buttonOpen);
         controls.addView(exoSubtitle);
-        controls.addView(buttonAspectRatio);
-        controls.addView(buttonAspectRatioMenu);
-        controls.addView(buttonZoomIn);
-        controls.addView(buttonZoomOut);
-        if (Utils.isPiPSupported(this) && buttonPiP != null) {
-            controls.addView(buttonPiP);
-        }
+        controls.addView(exoShuffle);
         if (mPrefs.repeatToggle) {
             controls.addView(exoRepeat);
         }
+        controls.addView(buttonAspectRatio);
+        // controls.addView(buttonAspectRatioMenu);
+        controls.addView(buttonZoomIn);
+        controls.addView(buttonZoomOut);
+        // if (Utils.isPiPSupported(this) && buttonPiP != null) {
+        //     controls.addView(buttonPiP);
+        // }
         if (!isTvBox) {
             controls.addView(buttonRotation);
         }
@@ -778,6 +810,48 @@ public class PlayerActivity extends Activity {
             if (useMediaStore() ) {
                 Utils.scanMediaStorage(this);
             }
+        }
+    }
+
+    private void loadVideoConfigs(){
+        Map<String, ?> allEntries = videoPrefs.getAll();
+        for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
+            String uriString = entry.getKey();
+            String[] values = ((String)entry.getValue()).split(",");
+            if (values.length == 2) {
+                try {
+                    VideoConfig config = new VideoConfig();
+                    config.resizeMode = Integer.parseInt(values[0]);
+                    config.scale = Float.parseFloat(values[1]);
+                    videoConfigs.put(uriString, config);
+                } catch (NumberFormatException e) {
+                    // e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void saveVideoConfig(String uriString, int resizeMode, float scale) {
+        VideoConfig config = new VideoConfig();
+        config.resizeMode = resizeMode;
+        config.scale = scale;
+        videoConfigs.put(uriString, config);
+
+        SharedPreferences.Editor editor = videoPrefs.edit();
+        editor.putString(uriString, resizeMode + "," + scale);
+        editor.apply();
+    }
+
+    private void applyVideoConfig(Uri uri) {
+        if (uri == null) {
+            return;
+        }
+        String uriString = uri.toString();
+        VideoConfig config = videoConfigs.get(uriString);
+        if (config != null) {
+            playerView.setResizeMode(config.resizeMode);
+            playerView.setScale(config.scale);
+            updatebuttonAspectRatioIcon();
         }
     }
 
@@ -1033,9 +1107,10 @@ public class PlayerActivity extends Activity {
                     default:
                         if (isScaleStarting) {
                             isScaleStarting = false;
-                        } else {
-                            scaleEnd();
                         }
+                        //else {
+                          //  scaleEnd();
+                        //}
                 }
             }
             return true;
@@ -1344,15 +1419,17 @@ public class PlayerActivity extends Activity {
                 // https://github.com/google/ExoPlayer/issues/5765
                 timeBar.setBufferedColor(0x33FFFFFF);
             }
-
+            // aspect ratio and scale
             playerView.setResizeMode(mPrefs.resizeMode);
 
             if (mPrefs.resizeMode == AspectRatioFrameLayout.RESIZE_MODE_ZOOM) {
                 playerView.setScale(mPrefs.scale);
             } else {
-                playerView.setScale(1.f);
+                playerView.setScale(playerView.getScaleFit());
             }
             updatebuttonAspectRatioIcon();
+            // load saved per video config
+            applyVideoConfig(mPrefs.mediaUri);
 
             MediaItem.Builder mediaItemBuilder = new MediaItem.Builder()
                     .setUri(mPrefs.mediaUri)
@@ -1446,9 +1523,9 @@ public class PlayerActivity extends Activity {
 
             if (haveMedia) {
                 // Prevent overwriting temporarily inaccessible media position
-                if (player.isCurrentMediaItemSeekable()) {
-                    mPrefs.updatePosition(player.getCurrentPosition());
-                }
+//                if (player.isCurrentMediaItemSeekable()) {
+//                    mPrefs.updatePosition(player.getCurrentPosition());
+//                }
                 mPrefs.updateMeta(getSelectedTrack(C.TRACK_TYPE_AUDIO),
                         getSelectedTrack(C.TRACK_TYPE_TEXT),
                         playerView.getResizeMode(),
@@ -2309,18 +2386,18 @@ public class PlayerActivity extends Activity {
         }
     }
 
-    private void scaleStart() {
-        isScaling = true;
-        if (playerView.getResizeMode() != AspectRatioFrameLayout.RESIZE_MODE_ZOOM) {
-            playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ZOOM);
-        }
-        scaleFactor = playerView.getVideoSurfaceView().getScaleX();
-        playerView.removeCallbacks(playerView.textClearRunnable);
-        playerView.clearIcon();
-        playerView.setCustomErrorMessage((int)(scaleFactor * 100) + "%");
-        playerView.hideController();
-        isScaleStarting = true;
-    }
+    // private void scaleStart() {
+    //     isScaling = true;
+    //     if (playerView.getResizeMode() != AspectRatioFrameLayout.RESIZE_MODE_ZOOM) {
+    //         playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ZOOM);
+    //     }
+    //     scaleFactor = playerView.getVideoSurfaceView().getScaleX();
+    //     playerView.removeCallbacks(playerView.textClearRunnable);
+    //     playerView.clearIcon();
+    //     playerView.setCustomErrorMessage((int)(scaleFactor * 100) + "%");
+    //     playerView.hideController();
+    //     isScaleStarting = true;
+    // }
 
     private void scale(boolean up) {
         if (up) {
@@ -2329,22 +2406,24 @@ public class PlayerActivity extends Activity {
             scaleFactor -= 0.05;
         }
         scaleFactor = Utils.normalizeScaleFactor(scaleFactor, playerView.getScaleFit());
+        playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ZOOM);
         playerView.setScale(scaleFactor);
         playerView.setCustomErrorMessage((int)(scaleFactor * 100) + "%");
+        saveVideoConfig(mPrefs.mediaUri.toString(), playerView.getResizeMode(), scaleFactor);
     }
 
-    private void scaleEnd() {
-        isScaling = false;
-        playerView.postDelayed(playerView.textClearRunnable, 200);
-        if (player != null && !player.isPlaying()) {
-            playerView.showController();
-        }
-        if (Math.abs(playerView.getScaleFit() - scaleFactor) < 0.01 / 2) {
-            playerView.setScale(1.f);
-            playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
-        }
-        updatebuttonAspectRatioIcon();
-    }
+    // private void scaleEnd() {
+    //     isScaling = false;
+    //     playerView.postDelayed(playerView.textClearRunnable, 200);
+    //     if (player != null && !player.isPlaying()) {
+    //         playerView.showController();
+    //     }
+    //     if (Math.abs(playerView.getScaleFit() - scaleFactor) < 0.01 / 2) {
+    //         playerView.setScale(1.f);
+    //         playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
+    //     }
+    //     updatebuttonAspectRatioIcon();
+    // }
 
     private void updatebuttonAspectRatioIcon() {
         if (playerView.getResizeMode() == AspectRatioFrameLayout.RESIZE_MODE_ZOOM) {

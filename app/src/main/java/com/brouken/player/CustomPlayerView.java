@@ -311,7 +311,10 @@ public class CustomPlayerView extends PlayerView implements GestureDetector.OnGe
 
     @Override
     public boolean onScale(ScaleGestureDetector scaleGestureDetector) {
-        if (PlayerActivity.locked)
+        // turn off on TV boxes
+        if (Utils.isTvBox(getContext()))
+            return false;
+        if (PlayerActivity.locked )
             return false;
 
         if (canScale) {
@@ -329,6 +332,9 @@ public class CustomPlayerView extends PlayerView implements GestureDetector.OnGe
 
     @Override
     public boolean onScaleBegin(ScaleGestureDetector scaleGestureDetector) {
+        // turn off on TV boxes
+        if (Utils.isTvBox(getContext()))
+            return false;
         if (PlayerActivity.locked)
             return false;
 
@@ -354,6 +360,9 @@ public class CustomPlayerView extends PlayerView implements GestureDetector.OnGe
 
     @Override
     public void onScaleEnd(ScaleGestureDetector scaleGestureDetector) {
+        // turn off on TV boxes
+        if (Utils.isTvBox(getContext()))
+            return;
         if (PlayerActivity.locked)
             return;
         if (mScaleFactor - mScaleFactorFit < 0.001) {

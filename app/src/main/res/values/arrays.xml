@@ -2,15 +2,15 @@
 <resources>
   <string-array name="file_access_entries">
     <item>@string/pref_file_access_auto</item>
-    <item>Storage Access Framework</item>
     <item>MediaStore</item>
+    <item>Storage Access Framework</item>
     <item>Legacy</item>
   </string-array>
 
   <string-array name="file_access_values">
     <item>auto</item>
-    <item>saf</item>
     <item>mediastore</item>
+    <item>saf</item>
     <item>legacy</item>
   </string-array>
 
