@@ -40,6 +40,7 @@ import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Rational;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -55,13 +56,14 @@ import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.view.ContextThemeWrapper;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.ContextCompat;
@@ -638,19 +640,8 @@ public class PlayerActivity extends Activity {
         updatebuttonAspectRatioIcon();
         // final Button buttonAspectRatioMenu = new Button(this, null, R.attr.imageButtonStyle);
         // buttonAspectRatioMenu.setText("AR");
-
-        final PopupMenu popupMenu = new PopupMenu(PlayerActivity.this, buttonAspectRatio);
-        popupMenu.getMenu().add(R.string.video_resize_fit);
-        popupMenu.getMenu().add("1:1");
-        popupMenu.getMenu().add("3:2");
-        popupMenu.getMenu().add("4:3");
-        popupMenu.getMenu().add("5:4");
-        popupMenu.getMenu().add("11:8");
-        popupMenu.getMenu().add("14:9");
-        popupMenu.getMenu().add("14:10");
-        popupMenu.getMenu().add("16:9");
-        popupMenu.getMenu().add("16:10");
-        popupMenu.getMenu().add("21:9");
+        final PopupMenu popupMenu = new PopupMenu(PlayerActivity.this, buttonAspectRatio, Gravity.TOP, R.attr.popupMenuStyle, 0);
+        popupMenu.getMenuInflater().inflate(R.menu.aspect_ratio_menu, popupMenu.getMenu());
 
         popupMenu.setOnMenuItemClickListener(item -> {
             AspectRatioFrameLayout contentFrame = playerView.findViewById(R.id.exo_content_frame);
