@@ -583,7 +583,7 @@ public class PlayerActivity extends Activity {
             e.printStackTrace();
         }
 
-        findViewById(R.id.delete).setOnClickListener(view -> askDeleteMedia());
+        // findViewById(R.id.delete).setOnClickListener(view -> askDeleteMedia());
 
         findViewById(R.id.next).setOnClickListener(view -> {
             if (!isTvBox && mPrefs.askScope) {
@@ -2286,45 +2286,46 @@ public class PlayerActivity extends Activity {
     }
 
     void setEndControlsVisible(boolean visible) {
-        final int deleteVisible = (visible && haveMedia && Utils.isDeletable(this, mPrefs.mediaUri)) ? View.VISIBLE : View.INVISIBLE;
+        // after current media ended
+        // final int deleteVisible = (visible && haveMedia && Utils.isDeletable(this, mPrefs.mediaUri)) ? View.VISIBLE : View.INVISIBLE;
         final int nextVisible = (visible && haveMedia && (nextUri != null || (mPrefs.askScope && !isTvBox))) ? View.VISIBLE : View.INVISIBLE;
-        findViewById(R.id.delete).setVisibility(deleteVisible);
+        // findViewById(R.id.delete).setVisibility(deleteVisible);
         findViewById(R.id.next).setVisibility(nextVisible);
     }
 
-    void askDeleteMedia() {
-        final AlertDialog.Builder builder = new AlertDialog.Builder(PlayerActivity.this);
-        builder.setMessage(getString(R.string.delete_query));
-        builder.setPositiveButton(R.string.delete_confirmation, (dialogInterface, i) -> {
-            releasePlayer();
-            deleteMedia();
-            if (nextUri == null) {
-                haveMedia = false;
-                setEndControlsVisible(false);
-                playerView.setControllerShowTimeoutMs(-1);
-            } else {
-                skipToNext();
-            }
-        });
-        builder.setNegativeButton(android.R.string.cancel, (dialog, which) -> {});
-        final AlertDialog dialog = builder.create();
-        dialog.show();
-    }
+    // void askDeleteMedia() {
+    //     final AlertDialog.Builder builder = new AlertDialog.Builder(PlayerActivity.this);
+    //     builder.setMessage(getString(R.string.delete_query));
+    //     builder.setPositiveButton(R.string.delete_confirmation, (dialogInterface, i) -> {
+    //         releasePlayer();
+    //         deleteMedia();
+    //         if (nextUri == null) {
+    //             haveMedia = false;
+    //             setEndControlsVisible(false);
+    //             playerView.setControllerShowTimeoutMs(-1);
+    //         } else {
+    //             skipToNext();
+    //         }
+    //     });
+    //     builder.setNegativeButton(android.R.string.cancel, (dialog, which) -> {});
+    //     final AlertDialog dialog = builder.create();
+    //     dialog.show();
+    // }
 
-    void deleteMedia() {
-        try {
-            if (ContentResolver.SCHEME_CONTENT.equals(mPrefs.mediaUri.getScheme())) {
-                DocumentsContract.deleteDocument(getContentResolver(), mPrefs.mediaUri);
-            } else if (ContentResolver.SCHEME_FILE.equals(mPrefs.mediaUri.getScheme())) {
-                final File file = new File(mPrefs.mediaUri.getSchemeSpecificPart());
-                if (file.canWrite()) {
-                    file.delete();
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    // void deleteMedia() {
+    //     try {
+    //         if (ContentResolver.SCHEME_CONTENT.equals(mPrefs.mediaUri.getScheme())) {
+    //             DocumentsContract.deleteDocument(getContentResolver(), mPrefs.mediaUri);
+    //         } else if (ContentResolver.SCHEME_FILE.equals(mPrefs.mediaUri.getScheme())) {
+    //             final File file = new File(mPrefs.mediaUri.getSchemeSpecificPart());
+    //             if (file.canWrite()) {
+    //                 file.delete();
+    //             }
+    //         }
+    //     } catch (Exception e) {
+    //         e.printStackTrace();
+    //     }
+    // }
 
     private void dispatchPlayPause() {
         if (player == null)
