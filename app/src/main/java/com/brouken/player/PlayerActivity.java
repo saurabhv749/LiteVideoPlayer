@@ -62,7 +62,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
-import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
@@ -343,9 +342,9 @@ public class PlayerActivity extends Activity {
         exoPlayPause = findViewById(R.id.exo_play_pause);
         loadingProgressBar = findViewById(R.id.loading);
 
-        playerView.setShowNextButton(true);
-        playerView.setShowPreviousButton(true);
-        playerView.setShowShuffleButton(true);
+        playerView.setShowNextButton(false);
+        playerView.setShowPreviousButton(false);
+        playerView.setShowShuffleButton(false);
         playerView.setShowFastForwardButton(false);
         playerView.setShowRewindButton(false);
 
@@ -595,7 +594,6 @@ public class PlayerActivity extends Activity {
         });
 
         exoPlayPause.setOnClickListener(view -> dispatchPlayPause());
-
         // Prevent double tap actions in controller
         findViewById(R.id.exo_bottom_bar).setOnTouchListener((v, event) -> true);
         //titleView.setOnTouchListener((v, event) -> true);
@@ -1421,7 +1419,7 @@ public class PlayerActivity extends Activity {
             updatebuttonAspectRatioIcon();
             // load saved per video config
             applyVideoConfig(mPrefs.mediaUri);
-
+            // MediaItem
             MediaItem.Builder mediaItemBuilder = new MediaItem.Builder()
                     .setUri(mPrefs.mediaUri)
                     .setMimeType(mPrefs.mediaType);
